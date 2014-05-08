@@ -1,7 +1,10 @@
+__author__ = 'Aniket'
 import __future__
 import bs4
 import urllib2 as donut
 import socket
+import codecs
+import time
 import sys
 import os
 Queue=list()
@@ -45,15 +48,18 @@ def table_existence():
 
 def getlink (url):
     socket.setdefaulttimeout(2000)
-    print("checker")
+    print(url,"checker")
     html=donut.urlopen(url)
     html=html.read()
     html=html.replace("<scr'+'ipt","")#managing problem with python parser
     temp=list()
     soup=bs4.BeautifulSoup(html)
     for find in soup.find_all('a'):
+        print(find)
         p=find.get('href')
-        if (p.find('rel=nofollow')==-1 and p.find("javascript")==-1):
+        p=str(p)
+        print (p,"our time is now")
+        if (p.find('rel=nofollow')==-1  ):
             parts=donut.urlparse.urlsplit(p)
             if (parts.scheme!=''):
                 temp.append(p)
@@ -109,6 +115,7 @@ def database(urlpath,urlparentrank,outlinks,urldirector,):
     return rank+damper
 
 
+
 #page rank exceeding 1
 
 
@@ -138,6 +145,8 @@ def page_mechanism(urlmain):
         rank=linktemp.urlrank
         print ("12",linktemp.urlpath)
         q1=getlink(linktemp.urlpath)
+        print(q1,"wow man let's roll")
+        print(q1)
         len1=len(q1)
         print(len(linktemp.urlpath),linktemp.tempparentrank,linktemp.pol)
         if fill==0:
