@@ -3,6 +3,7 @@ import __future__
 import bs4
 import urllib2 as donut
 import socket
+import hashlib
 import codecs
 import time
 import sys
@@ -50,14 +51,18 @@ def getlink (url):
     socket.setdefaulttimeout(2000)
     print(url,"checker")
     html=donut.urlopen(url)
+    print(html)
     html=html.read()
-    html=html.replace("<scr'+'ipt","")#managing problem with python parser
+    html=html.replace("<scr'+'ipt","")#managing problem with python parser)
     temp=list()
     soup=bs4.BeautifulSoup(html)
     for find in soup.find_all('a'):
         print(find)
         p=find.get('href')
-        p=str(p)
+        try:
+            p=str(p)
+        except:
+            p=p.replace("u'\u200e","")
         print (p,"our time is now")
         if (p.find('rel=nofollow')==-1  ):
             parts=donut.urlparse.urlsplit(p)
