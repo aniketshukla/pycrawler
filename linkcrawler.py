@@ -17,10 +17,10 @@ global count
 while (1):
     try:
         con=sqlite3.connect('webcrawler')#yo ho pycache thanks for saving it in bytecode
-        print ("database has been converted to bytecode")
+        print ("connected to database...")
         break
     except:
-        print("trying again")
+        print("blimey!....trying again")
 l=con.cursor()
 l.execute('''CREATE TABLE IF NOT EXISTS crawlfinaldata
                       (urlpath VARCHAR(200)  PRIMARY KEY NOT NULL UNIQUE ,urlrank FLOAT  DESC not null,urldamped FLOAT DESC NOT NULL ,backlinks DESC INT not null ,urldirectory blob )''')
@@ -49,22 +49,18 @@ def table_existence():
 
 def getlink (url):
     socket.setdefaulttimeout(2000)
-    print(url,"checker")
     html=donut.urlopen(url)
-    print(html)
     html=html.read()
     html=html.replace("<scr'+'ipt","")#managing problem with python parser)
     temp=list()
     soup=bs4.BeautifulSoup(html)
     for find in soup.find_all('a'):
-        print(find)
         p=find.get('href')
         try:
             p=str(p)
         except:
             p=p.replace("u'\u200e","")
-        print (p,"our time is now")
-        if (p.find('rel=nofollow')==-1  ):
+        if (p.find('rel=nofollow')==-1 and p.find('mailto')==-1 and p.find('javascript')==-1 ) :
             parts=donut.urlparse.urlsplit(p)
             if (parts.scheme!=''):
                 temp.append(p)
@@ -85,37 +81,40 @@ def database(urlpath,urlparentrank,outlinks,urldirector,):
     l.execute('''select COUNT (*) FROM crawlfinaldata''')
     con.commit()
     l1=l.fetchone()
-    print(l1,"database")
-    if (l1[0]==None or l1[0]==0):
-        damper=0.15
+    q=l1
+    print(l1,"database storing begins")
+    if (l1==None or l1==0):
+        damper1=0.15
     else:
         print(l1)
-        damper=0.15/l1[0]
+        damper1=0.15/l1[0]
     print(urlpath)
     l.execute('''SELECT  urlrank, urldamped, backlinks FROM crawlfinaldata WHERE urlpath=?''', (urlpath,))
     con.commit()
     temp=l.fetchall()
     if (len(temp)==0):
         rank=0.85*urlparentrank/float(outlinks)
-        print("case1")
     elif (temp[0][0]==0):
         if outlinks==0:
             rank=0
-            print("case2")
         else:
             rank = 0.85 * urlparentrank/float(outlinks)
-            print("case3")
     else:
-        print (temp[0],"bliss")
         rank = 0.85 * temp[0][0]+urlparentrank/float(outlinks)
-        print("case4")
     if len(temp)==0:
         backlinks = 1
     else:
         backlinks= 1+int(temp[0][2])
+    if len(temp)==0:
+        damper=damper1
+    elif temp[0][1]==0:
+        damper=damper1
+    else:
+        damper=-temp[0][1]+damper1
     print("123456")
     q=l.execute('''insert or replace into crawlfinaldata values(?,?,?,?,NULL )''',(urlpath,rank,damper,backlinks))
     con.commit()
+    print("page_rank is",rank+damper)
     print(rank,backlinks,damper,"123")
     return rank+damper
 
@@ -143,15 +142,11 @@ def page_mechanism(urlmain):
         urlobject[fill].pol=0
         urlobject[fill].urlproviderlist=list()
         add(Queue,urlobject[fill])
-        print (urlobject[fill].urlpath)
     while (Queue!=None):
-        print (1)
         linktemp=pop(Queue)
+        print("popped element",linktemp.urlpath)
         rank=linktemp.urlrank
-        print ("12",linktemp.urlpath)
         q1=getlink(linktemp.urlpath)
-        print(q1,"wow man let's roll")
-        print(q1)
         len1=len(q1)
         print(len(linktemp.urlpath),linktemp.tempparentrank,linktemp.pol)
         if fill==0:
@@ -162,13 +157,11 @@ def page_mechanism(urlmain):
                     temper =database(linktemp.urlpath, linktemp.tempparentrank, linktemp.pol, None)
         global limit
         limit=limit+1
-        print(limit,"is this what we want")
         for i in q1[0][0]:
             fill=fill+1
             urlobject.append(url)
             urlobject[fill].urlpath=i
             urlobject[fill].lastparent=linktemp.urlpath
-            print(temper,"check error")
             urlobject[fill].tempparentrank=temper
             urlobject[fill].pol=len1
             urlobject[fill].urlproviderlist.append(linktemp.urlpath)
@@ -177,7 +170,7 @@ def page_mechanism(urlmain):
 
 
 def main ():
-    q=input("please enter link in quotation")
+    q=input("starting the execution...please enter the link>>>>")
     page_mechanism(q)
 
 main()
